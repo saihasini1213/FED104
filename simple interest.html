@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Simple Interest Calculator</title>
+  <meta name="description" content="Simple Interest Calculator — enter principal, rate and time to compute simple interest and total amount." />
+  <style>
+    :root{
+      --bg:#f3f6fb;
+      --card:#ffffff;
+      --muted:#6b7280;
+      --accent:#2563eb;
+      --accent-600:#1e40af;
+      --success:#10b981;
+      --danger:#ef4444;
+      --radius:12px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background:linear-gradient(180deg,#eef2ff 0%,var(--bg) 100%);
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:28px;
+      color:#0f172a;
+    }
+    .container{
+      width:100%;
+      max-width:980px;
+      display:grid;
+      grid-template-columns: 1fr 420px;
+      gap:24px;
+    }
+    .card{
+      background:var(--card);
+      border-radius:var(--radius);
+      padding:22px;
+      box-shadow:0 6px 18px rgba(15,23,42,0.06);
+    }
+    header h1{
+      margin:0;
+      font-size:20px;
+      letter-spacing:-0.2px;
+    }
+    header p{ margin:6px 0 18px; color:var(--muted); font-size:14px; }
+    label{ display:block; font-size:13px; color:var(--muted); margin-bottom:8px; }
+    .row{ display:flex; gap:12px; }
+    .field{
+      margin-bottom:14px;
+      flex:1;
+    }
+    input[type="number"], input[type="text"], select {
+      width:100%;
+      padding:12px 14px;
+      border-radius:10px;
+      border:1px solid #e6edf8;
+      background:#fbfdff;
+      font-size:15px;
+      outline:none;
+      transition:box-shadow .15s, border-color .15s;
+    }
+    input:focus{ box-shadow:0 6px 18px rgba(37,99,235,0.08); border-color:var(--accent); }
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding:10px 14px;
+      border-radius:10px;
+      border:0;
+      cursor:pointer;
+      font-weight:600;
+      color:white;
+      background:var(--accent);
+      box-shadow: 0 8px 20px rgba(37,99,235,0.12);
+    }
+    .btn.secondary{ background:#64748b; box-shadow:none; }
+    .btn.ghost{ background:transparent; color:var(--accent-600); border:1px solid rgba(30,64,175,0.08); box-shadow:none; }
+    .result{
+      background:linear-gradient(180deg,#fafbff,#fff);
+      padding:14px;
+      border-radius:10px;
+      border:1px solid #eef2ff;
+    }
+    .big { font-size:20px; font-weight:700; margin:6px 0; }
+    .muted{ color:var(--muted); font-size:13px; }
+    .history-list{ max-height:300px; overflow:auto; margin-top:10px; display:grid; gap:8px; }
+    .history-item{
+      display:flex; justify-content:space-between; gap:12px; padding:10px; border-radius:8px; background:#fbfdff; border:1px solid #f1f5f9;
+      font-size:13px;
+    }
+    .small{ font-size:12px; color:var(--muted) }
+    footer{ margin-top:14px; display:flex; gap:8px; align-items:center; justify-content:space-between; }
+    .help{ font-size:13px; color:var(--muted) }
+    .danger{ color:var(--danger); font-weight:600; }
+    @media (max-width:980px){
+      .container{ grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <main class="card">
+      <header>
+        <h1>Simple Interest Calculator</h1>
+        <p>Calculate simple interest and total amount quickly. Enter principal, annual rate (%) and time (years).</p>
+      </header>
+
+      <form id="si-form" autocomplete="off" onsubmit="return false;">
+        <div class="row">
+          <div class="field">
+            <label for="principal">Principal amount (₹)</label>
+            <input id="principal" type="number" min="0" step="0.01" placeholder="e.g., 10000" required>
+          </div>
+          <div class="field">
+            <label for="rate">Annual Rate (%)</label>
+            <input id="rate" type="number" min="0" step="0.01" placeholder="e.g., 5.5" required>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label for="time">Time (years)</label>
+            <input id="time" type="number" min="0" step="0.01" placeholder="e.g., 3" required>
+          </div>
+          <div class="field">
+            <label for="period">Period unit</label>
+            <select id="period">
+              <option value="years">Years</option>
+              <option value="months">Months</option>
+              <option value="days">Days</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:10px; margin-top:8px;">
+          <button id="calc" class="btn" type="button">Calculate</button>
+          <button id="reset" class="btn secondary" type="button">Reset</button>
+          <button id="download" class="btn ghost" type="button">Download CSV</button>
+        </div>
+      </form>
+
+      <section style="margin-top:16px;">
+        <div class="result" id="resultPanel" aria-live="polite" hidden>
+          <div class="small">Calculation</div>
+          <div class="muted" id="steps" style="margin-top:6px;font-size:13px;"></div>
+
+          <div style="display:flex; gap:12px; margin-top:10px; align-items:baseline;">
+            <div>
+              <div class="small">Simple Interest</div>
+              <div class="big" id="si">₹0.00</div>
+            </div>
+            <div>
+              <div class="small">Total Amount</div>
+              <div class="big" id="total">₹0.00</div>
+            </div>
+          </div>
+
+          <footer>
+            <div class="help">Results saved in history below.</div>
+            <div>
+              <button id="copy" class="btn ghost">Copy Result</button>
+            </div>
+          </footer>
+        </div>
+
+        <div style="margin-top:16px;">
+          <div class="small" style="margin-bottom:8px;">History</div>
+          <div class="history-list" id="history"></div>
+          <div style="margin-top:8px; display:flex; gap:8px;">
+            <button id="clearHistory" class="btn secondary" type="button">Clear History</button>
+            <button id="exportJSON" class="btn ghost" type="button">Export JSON</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <aside class="card" aria-labelledby="aboutTitle">
+      <h2 id="aboutTitle" style="font-size:16px;margin:0 0 6px 0;">About this app</h2>
+      <p class="muted">A small accessible web app to compute simple interest using the formula:</p>
+      <pre style="background:#f8fafc;padding:10px;border-radius:8px;border:1px solid #eef2ff;font-size:13px;margin:8px 0;">
+Simple Interest = (Principal × Rate × Time) / 100
+Total Amount = Principal + Simple Interest
+      </pre>
+
+      <p class="muted small">Supports time units in years, months and days. When using months or days the app converts them into fractional years (e.g., 6 months = 0.5 years).</p>
+
+      <hr style="margin:12px 0;border:none;border-top:1px solid #eef2ff;">
+
+      <div style="display:grid; gap:8px;">
+        <div class="small"><strong>How results are rounded:</strong> Values shown are rounded to two decimal places for currency display.</div>
+        <div class="small"><strong>Accessibility:</strong> Buttons and fields are keyboard accessible and labelled.</div>
+      </div>
+
+      <hr style="margin:12px 0;border:none;border-top:1px solid #eef2ff;">
+
+      <div style="display:flex; gap:8px;">
+        <a href="#" id="repoLink" class="btn ghost" title="Project repository">Repository</a>
+        <a href="#" id="liveLink" class="btn ghost" title="Deployed site">Live Site</a>
+      </div>
+    </aside>
+  </div>
+
+<script>
+  // Helper: format currency in Indian Rupees style but keep generic
+  function formatCurrency(value){
+    const num = Number(value);
+    if (!isFinite(num)) return '₹0.00';
+    return '₹' + num.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+
+  // Safe parse with fallback
+  function parseNumber(val){
+    const n = parseFloat(val);
+    return isNaN(n) ? 0 : n;
+  }
+
+  // Convert time based on selected unit to years (decimal)
+  function timeToYears(time, unit){
+    if (unit === 'years') return time;
+    if (unit === 'months') return time / 12;
+    if (unit === 'days') return time / 365;
+    return time;
+  }
+
+  const principalEl = document.getElementById('principal');
+  const rateEl = document.getElementById('rate');
+  const timeEl = document.getElementById('time');
+  const periodEl = document.getElementById('period');
+  const calcBtn = document.getElementById('calc');
+  const resetBtn = document.getElementById('reset');
+  const resultPanel = document.getElementById('resultPanel');
+  const siEl = document.getElementById('si');
+  const totalEl = document.getElementById('total');
+  const stepsEl = document.getElementById('steps');
+  const historyEl = document.getElementById('history');
+  const clearHistoryBtn = document.getElementById('clearHistory');
+  const downloadBtn = document.getElementById('download');
+  const copyBtn = document.getElementById('copy');
+  const exportJSONBtn = document.getElementById('exportJSON');
+  const repoLink = document.getElementById('repoLink');
+  const liveLink = document.getElementById('liveLink');
+
+  // Hook up repository and live link placeholders (edit to real links)
+  repoLink.href = 'https://github.com/saihasini1213/2400031783_insemlab';
+  liveLink.href = 'https://simple-website.example.com';
+
+  // Persistent storage key
+  const STORAGE_KEY = 'si_history_v1';
+
+  // Load history from localStorage
+  function loadHistory(){
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch(e){
+      return [];
+    }
+  }
+  // Save history
+  function saveHistory(arr){
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); } catch(e){}
+  }
+
+  function renderHistory(){
+    const items = loadHistory().slice().reverse(); // show latest first
+    historyEl.innerHTML = '';
+    if (items.length === 0){
+      const el = document.createElement('div');
+      el.className = 'small muted';
+      el.textContent = 'No history yet — perform a calculation to save it here.';
+      historyEl.appendChild(el);
+      return;
+    }
+    items.forEach(it => {
+      const div = document.createElement('div');
+      div.className = 'history-item';
+      div.innerHTML = `
+        <div style="flex:1;">
+          <div style="font-weight:700">${formatCurrency(it.principal)} • ${it.rate}% • ${it.time} ${it.unit}</div>
+          <div class="small" style="margin-top:4px;color:var(--muted)">SI: ${formatCurrency(it.si)} — Total: ${formatCurrency(it.total)}</div>
+        </div>
+        <div class="small" style="text-align:right">
+          <div>${new Date(it.ts).toLocaleString()}</div>
+          <button class="btn ghost" data-ts="${it.ts}" style="margin-top:8px">Remove</button>
+        </div>
+      `;
+      // remove handler
+      div.querySelector('button').addEventListener('click', e => {
+        const ts = e.currentTarget.getAttribute('data-ts');
+        const arr = loadHistory().filter(x => String(x.ts) !== String(ts));
+        saveHistory(arr);
+        renderHistory();
+      });
+      historyEl.appendChild(div);
+    });
+  }
+
+  // Add to history (keeps last 50)
+  function addHistory(entry){
+    const arr = loadHistory();
+    arr.push(entry);
+    if (arr.length > 50) arr.shift();
+    saveHistory(arr);
+    renderHistory();
+  }
+
+  // Calculation logic
+  function calculate(){
+    const principal = parseNumber(principalEl.value);
+    const rate = parseNumber(rateEl.value);
+    const time = parseNumber(timeEl.value);
+    const unit = periodEl.value;
+
+    // Basic validation
+    if (principal <= 0 || rate <= 0 || time <= 0){
+      alert('Please enter positive numbers for principal, rate and time.');
+      return;
+    }
+
+    // Convert time unit to years
+    const timeYears = timeToYears(time, unit);
+
+    // Compute simple interest carefully
+    // SI = (P * R * T) / 100
+    // Compute step-by-step to reduce floating surprises
+    const part1 = principal * rate;
+    const part2 = part1 * timeYears;
+    const siRaw = part2 / 100;
+    const totalRaw = principal + siRaw;
+
+    // Round for display
+    const siRounded = Number(siRaw.toFixed(2));
+    const totalRounded = Number(totalRaw.toFixed(2));
+
+    // Show steps and results
+    stepsEl.textContent = `${principal} × ${rate}% × ${timeYears} (years) ÷ 100 = ${siRounded}`;
+    siEl.textContent = formatCurrency(siRounded);
+    totalEl.textContent = formatCurrency(totalRounded);
+    resultPanel.hidden = false;
+
+    // Save to history
+    addHistory({
+      ts: Date.now(),
+      principal,
+      rate,
+      time,
+      unit,
+      si: siRounded,
+      total: totalRounded
+    });
+  }
+
+  // Reset form
+  function resetForm(){
+    document.getElementById('si-form').reset();
+    resultPanel.hidden = true;
+  }
+
+  // Download CSV of history
+  function downloadCSV(){
+    const items = loadHistory();
+    if (!items.length) { alert('No history to download.'); return; }
+    const header = ['timestamp','principal','rate','time','unit','simple_interest','total_amount'];
+    const rows = items.map(it => [
+      new Date(it.ts).toISOString(),
+      it.principal,
+      it.rate,
+      it.time,
+      it.unit,
+      it.si,
+      it.total
+    ]);
+    const csv = [header, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'si_history.csv';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  // Export JSON
+  function exportJSON(){
+    const items = loadHistory();
+    if (!items.length) { alert('No history to export.'); return; }
+    const blob = new Blob([JSON.stringify(items, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'si_history.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  // Copy current result text
+  function copyResult(){
+    if (resultPanel.hidden){
+      alert('No result to copy. Perform a calculation first.');
+      return;
+    }
+    const text = `Simple Interest: ${siEl.textContent}\nTotal Amount: ${totalEl.textContent}\n${stepsEl.textContent}`;
+    navigator.clipboard?.writeText(text).then(() => {
+      alert('Result copied to clipboard.');
+    }, () => {
+      prompt('Copy this text:', text);
+    });
+  }
+
+  // Event listeners
+  calcBtn.addEventListener('click', calculate);
+  resetBtn.addEventListener('click', resetForm);
+  downloadBtn.addEventListener('click', downloadCSV);
+  clearHistoryBtn.addEventListener('click', () => { if (confirm('Clear history?')) { saveHistory([]); renderHistory(); } });
+  exportJSONBtn.addEventListener('click', exportJSON);
+  copyBtn.addEventListener('click', copyResult);
+
+  // Keyboard Enter triggers calculate when inside form
+  document.getElementById('si-form').addEventListener('keydown', function(e){
+    if (e.key === 'Enter'){
+      e.preventDefault();
+      calculate();
+    }
+  });
+
+  // Initialize
+  renderHistory();
+</script>
+</body>
+</html>
